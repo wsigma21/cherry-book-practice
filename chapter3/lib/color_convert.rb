@@ -5,14 +5,17 @@
 # 10進数to16進数
 # 4, 60, 120 -> #043c78
 # 3つの変数を受け取ってそれぞれを16進数に変換し、#を頭につけた文字列を返す
-def to_hex(num1, num2, num3)
-  nums = [num1, num2, num3]
-  convert_nums = '#'
-  nums.each do |n|
-    n = n.to_s(16).rjust(2, '0')
-    convert_nums += n
-  end
-  convert_nums
+def to_hex(r, g, b)
+  nums = [r, g, b]
+  # convert_nums = '#'
+  # nums.each do |n|
+  #   n = n.to_s(16).rjust(2, '0')
+  #   convert_nums += n
+  # end
+  # convert_nums
+
+  # 上記の処理がsumを使えば1行でできる。。
+  nums.sum('#') { |n| n.to_s(16).rjust(2, '0') }
 end
 
 # 16進数to10進数
@@ -21,16 +24,21 @@ end
 def to_ints(num)
   # シャープを削除
   nums = [num[1..2], num[3..4], num[5..6]]
-  convert_nums = []
-  nums.each do |n|
-    n = n.to_i(16)
-    convert_nums << n
+  # convert_nums = []
+  # nums.each do |n|
+  #   n = n.to_i(16)
+  #   convert_nums << n
+  # end
+  # convert_nums
+
+  # mapを使えば空の配列を用意しなくて済む
+  nums.map do |n|
+    n.to_i(16)
   end
-  convert_nums
 end
 
-print to_hex(0, 0, 0)
-print to_hex(4, 60, 120)
-print to_hex(255, 255, 255)
+# print to_hex(0, 0, 0)
+# print to_hex(4, 60, 120)
+# print to_hex(255, 255, 255)
 print to_ints('#ffffff')
 print to_ints('#043c78')
