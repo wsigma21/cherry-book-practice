@@ -7,6 +7,7 @@
   - **第一に公式リファレンスを参照すること**
   - 読み方がわからない場合は以下を参照
     - [Rubyの公式リファレンスが読めるようになる本](https://zenn.dev/jnchito/books/how-to-read-ruby-reference)
+    - [るりまサーチ](https://docs.ruby-lang.org/ja/search/)
 
 ## chapter2
 
