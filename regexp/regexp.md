@@ -334,3 +334,293 @@
 - `[AB^]`は「AかBか^」
 - `^.`は行頭にくる任意の1文字
 - `\^`は「^」だけ
+
+## [初心者歓迎！手と目で覚える正規表現入門・その４（最終回）「中級者テクニックをマスターしよう」](https://qiita.com/jnchito/items/b0839f4f4651c29da408)
+
+### 英単語にぴったりマッチさせる（\b の使い方）
+
+- 英文から"ear"だけを抜き出す
+  - 普通に「ear」とだけ入力すると、"hearing", "bear"なども引っかかってしまう
+
+  > sounds that are pleasing to the ear.  
+  > ear is the organ of the sense of hearing.  
+  > I can't bear it.  
+  > Why on earth would anyone feel sorry for you?  
+
+- 「単語の境界」を表すメタ文字「\b」を使用する
+  - `\bear\b`と入力すれば"ear"だけを抜き出せる
+
+### 検索性の低いメソッドをきれいに抜き出す（\b の使い方・その２）
+
+- rubyのコード内で「t」メソッドを使っている箇所だけを抜き出す
+
+  ```html
+  <td>
+  <%= link_to I18n.t('.show'), user %>
+  <%= link_to t('.edit'), edit_user_path(user) %>
+  </td>
+  ```
+
+- 「t」メソッドの後ろにはピリオド、カッコ、スペースなどが入る可能性がある
+  - これらは正規表現上すべて単語の境界と見なされる
+  - `\bt\b`と入力すれば良い
+
+### ファイル名だけをピタリと抜き出す（肯定の後読み）
+
+- 以下からファイル名だけを抜き出したい
+
+  ```ruby
+  type=zip; filename=users.zip; size=1024;
+  type=xml; filename=posts.xml; size=2048;
+  ```
+
+- `filename=[^;]+`だと"filename="部分もマッチしてしまう
+- `filename=([^;]+)`とすれば、RubularのMatch Group欄にファイル名だけが出力される
+  - これをプログラムか何かで操作しても良い
+- 今回は「肯定の後読み」というテクニックが使える
+  - 一般に`(?<=abc)`と書くと、"abc"という文字列の直後の位置にマッチする
+  - `(?<=filename=)`と入力すると、`filename=`の直後がハイライトされた状態になる
+- `(?<=filename=)[^;]+`と入力すればファイル名だけがマッチする
+  - 「`filename=`という文字列の直後から始まって、";"以外の文字が1文字以上続く」ことを表す
+
+#### Rubyでの使用例
+
+- 肯定の後読みを使う場合
+
+  ```ruby
+  text = <<-TEXT
+  type=zip; filename=users.zip; size=1024;
+  type=xml; filename=posts.xml; size=2048;
+  TEXT
+  text.scan(/(?<=filename=)[^;]+/)
+  # => ["users.zip", "posts.xml"]
+  ```
+
+- 後読みを使わない場合
+  - scanで取り除く
+
+  ```ruby
+  text = <<-TEXT
+  type=zip; filename=users.zip; size=1024;
+  type=xml; filename=posts.xml; size=2048;
+  TEXT
+  text.scan(/filename=[^;]+/).map { |s| s.split('=').last }
+  # => ["users.zip", "posts.xml"]
+  ```
+
+#### 注意：JavaScript や Atom では「後読み」が使えません
+
+- JSでは`(?<= )`を使ってもエラーになる
+  - 記事公開当初はそうだったが、現在は使えるようになっている可能性もある。。
+
+### 特定の楽器を担当しているメンバーを抜き出す（肯定の先読み）
+
+- 以下からベースを担当しているメンバーを抜き出す
+
+  ```ruby
+  John:guitar, George:guitar, Paul:bass, Ringo:drum
+  Freddie:vocal, Brian:guitar, John:bass, Roger:drum
+  ```
+
+- `\w+:bass`だと"Paul:bass"のようになり、"bass"部分が邪魔
+- 肯定の先読みというテクニックを使う
+  - `(?=:bass)`と入力すると、「:bass」の直前の位置にマッチする
+- `\w+(?=:bass)`
+
+- RUbyで使った場合
+
+  ```ruby
+  text = <<-TEXT
+  John:guitar, George:guitar, Paul:bass, Ringo:drum
+  Freddie:vocal, Brian:guitar, John:bass, Roger:drum
+  TEXT
+  text.scan(/\w+(?=:bass)/)
+  # => ["Paul", "John"]
+  ```
+
+- 先読みはJavaScriptやAtomでも使える
+
+### 間違った都道府県名を見つける（否定の後読み）
+
+- 先読みと後読みは否定条件を指定することもできる
+
+- 以下のような誤ったテキストがあるとする
+
+  > 東京都  
+  > 千葉県  
+  > 神奈川県  
+  > 埼玉都  
+
+- `(?<!abc)`とすると"abc"という文字列以外の「直後の位置」にマッチする
+- `(?<!東京)都`と入力すると"埼玉都"の"都"にマッチする
+
+- 否定の後読みもJSやAtomでは使えない
+
+### 「食べ物のサザエ」を見つける（否定の先読み）
+
+- 以下のテキストから「食べ物のサザエ」を抜き出す
+
+  > つぼ焼きにしたサザエはおいしい  
+  > 日曜日にやってるサザエさんは面白い  
+
+- `(?!abc)`のように書くと"abc"という文字列以外の「直前の位置」にマッチする
+- `サザエ(?!さん)`とすると、「食べ物のサザエ」を抜き出せる
+  - "さん"以外の直前に出てくる「サザエ」を出せるため
+
+- 否定の先読みはJSやAtomでも使える
+
+### まとめ
+
+| 名称         | 例       | 意味                              |
+| ------------ | -------- | --------------------------------- |
+| 肯定的後読み | (?<=abc) | "abc"の「直後の位置」にマッチ     |
+| 肯定的先読み | (?=abc)  | "abc"の「直前の位置」にマッチ     |
+| 否定的後読み | (?<!abc) | "abc"以外の「直後の位置」にマッチ |
+| 否定的先読み | (?!abc)  | "abc"以外の「直前の位置」にマッチ |
+
+### URLがそのまま画面上に表示されているリンクを見つける（後方参照）
+
+- 第2回で扱った$1, \1は置換する時以外にも使える
+- 以下では`\1`は「`()`でキャプチャされた1番目の文字」を表す
+  - これを後方参照という
+
+- 例：URLがそのまま画面上に表示されているリンクを検索
+  - `<a href="(.+?)">\1<\/a>`
+
+    ```html
+    <a href="http://google.com">http://google.com</a>
+    <a href="http://yahoo.co.jp">ヤフー</a>
+    <a href="http://facebook.com">http://facebook.com</a>
+    ```
+
+### ツイート、アカウント、ツイート日時を抽出する（メタ文字の複雑な組み合わせ）
+
+- 以下からツイート、アカウント、ツイート日時をそれぞれ抽出する
+
+  ```bash
+  You say yes. - @jnchito 8s
+  I say no. - @BarackObama 12m
+  You say stop. - @dhh 7h
+  I say go go go. - @ladygaga Feb 20
+  Hello, goodbye. - @BillGates 11 Apr 2015
+  ```
+
+- ツイート
+  - 私の回答
+    - `.+(?=\s-) `
+  - 模範回答
+    - 行頭からハイフンまでの任意の文字列：`(^.*) - `
+
+- アカウント
+  - ＠で始まり、任意のアルファベットが続く文字列：`(@\w*)`
+
+- ツイート日時
+  - 色々なパターンがあるので、まずそれぞれに対応する正規表現を考える
+    - 数字 + s/m/h
+      - `\d+[smh]`
+    - アルファベット3文字 + 日付
+      - `([A-Z][a-z]{2} \d+)`
+        - "Apr 2015"にもマッチしてしまうが一旦これでOK
+    - 日付 + アルファベット3文字 + 年
+      - 同時に「アルファベット3文字 + 日付」も抜き出す
+        - `((?: \d+ )?[A-Z][a-z]{2} \d+)`
+
+  - 以上を踏まえて、すべての日時を一度に抜き出すには
+    - `(\d+[smh]|(?: \d+ )?[A-Z][a-z]{2} \d+)`
+
+#### 仕上げ：ツイート、アカウント、日時を一気に抜き出す
+
+`^(.*) - (@\w+) (\d+[smh]|(?:\d+ )?[A-Z][a-z]{2} \d+)`
+
+### ツールを使ってパフォーマンスの善し悪しを確認する
+
+`(_+|\w+)*a`のように`+`や`*`が`()`の中にも外にもあると、組み合わせの数が爆発的に増えてとんでもなく遅くなる可能性がある。
+
+[Online regex tester and debugger](https://regex101.com/)でマッチする（またはマッチに失敗する）までのステップ数をカウントできるので、パフォーマンスの良し悪しを確認してから実行する方が良い。
+
+### 小文字とは逆の意味になる \W \S \D \B
+
+- `\W`：英単語の構成文字以外（記号や空白など）
+- `\D`：半角数字以外
+- `\S`：空白文字以外
+- `\B`：単語の境界以外の位置
+
+## [正規表現で名前付きキャプチャを使う](https://qiita.com/jnchito/items/cceb669cb06fc044f411)
+
+- `()`でキャプチャした部分に名前をつける方法について
+
+### 名前付きキャプチャを使って置換する
+
+- `(?<name>pattern)`
+
+- 例
+  - 年月日
+    - `(?<year>\d{4})-(?<month>\d{2})-(?<date>\d{2})`
+
+    - 置換する場合は`\k<name>`という文字列を指定する
+
+      ```ruby
+      s = '2016-05-08'
+      puts s.gsub(
+        /(?<year>\d+)-(?<month>\d+)-(?<day>\d+)/, 
+        '\k<year>年\k<month>月\k<day>日'
+      )
+      ```
+
+### 名前付きキャプチャを変数に入れる
+
+```ruby
+s = '2016-05-08'
+if m = s.match(/(?<year>\d+)-(?<month>\d+)-(?<day>\d+)/)
+  year  = m[:year]
+  month = m[:month]
+  day   = m[:day]
+  puts "year: #{year}, month: #{month}, day: #{day}"
+  # => year: 2016, month: 05, day: 08
+end
+```
+
+- 直接ローカル変数にアサインする場合
+
+  ```ruby
+  s = '2016-05-08'
+  if /(?<year>\d+)-(?<month>\d+)-(?<day>\d+)/ =~ s
+    # 名前付きキャプチャがそのままローカル変数になる
+    puts "year: #{year}, month: #{month}, day: #{day}"
+    # => year: 2016, month: 05, day: 08
+  end
+  ```
+
+- 名前付きでないキャプチャを使用する場合
+
+  ```ruby
+  s = '2016-05-08'
+  if m = s.match(/(\d+)-(\d+)-(\d+)/)
+    year  = m[1]
+    month = m[2]
+    day   = m[3]
+    puts "year: #{year}, month: #{month}, day: #{day}"
+    # => year: 2016, month: 05, day: 08
+  end
+  ```
+
+### 後方参照で名前付きキャプチャを使う
+
+```ruby
+# HTMLからhrefのURLと表示テキストの内容が全く一緒のリンク（aタグ）を抜き出す
+html = '<p>Please visit <a href="http://google.com">http://google.com</a>.</p>'
+
+# 正規表現で該当するリンクを抜き出す。\1が連番で後方参照されている部分
+puts html[/<a href="(.+?)">\1<\/a>/]
+# => <a href="http://google.com">http://google.com</a>
+```
+
+- 後方参照の場合も`?<name>`や`\k<name>`で名前付きキャプチャを使える
+
+```ruby
+html = '<p>Please visit <a href="http://google.com">http://google.com</a>.</p>'
+
+# 名前付きキャプチャと後方参照を組み合わせる
+puts html[/<a href="(?<url>.+?)">\k<url><\/a>/]
+# => <a href="http://google.com">http://google.com</a>
+```
